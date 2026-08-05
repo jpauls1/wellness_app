@@ -1,0 +1,241 @@
+:root {
+  --text: #3f3d45;
+  --text-h: #08060d;
+  --bg: #fafafa;
+  --card-bg: #fff;
+  --border: #e5e4e7;
+  --accent: #17827a;
+  --accent-contrast: #fff;
+  --danger: #b3261e;
+  --shadow: rgba(0, 0, 0, 0.06) 0 1px 3px, rgba(0, 0, 0, 0.04) 0 1px 2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+
+  font: 16px/145% var(--sans);
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #d4d2d8;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --card-bg: #1f2028;
+    --border: #2e303a;
+    --accent: #2fb3a8;
+    --accent-contrast: #08060d;
+    --shadow: rgba(0, 0, 0, 0.4) 0 1px 3px, rgba(0, 0, 0, 0.25) 0 1px 2px;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 8px;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: 100svh;
+  padding: 0 16px 48px;
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header h1 {
+  font-size: 22px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.tabs button {
+  border: none;
+  background: transparent;
+  padding: 8px 16px;
+  border-radius: 8px;
+  color: var(--text);
+}
+
+.tabs button.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+main {
+  padding-top: 20px;
+}
+
+section > h2 {
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.card h3 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.entry-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.entry-form input,
+.entry-form select {
+  flex: 1 1 140px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.entry-form label {
+  display: none;
+}
+
+.entry-form button {
+  flex: 1 1 100%;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+.set-form {
+  margin-bottom: 16px;
+}
+
+.error {
+  color: var(--danger);
+  margin-top: 8px;
+}
+
+.empty-state,
+.muted {
+  color: var(--text);
+  opacity: 0.65;
+  font-size: 14px;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.history-list li:last-child {
+  border-bottom: none;
+}
+
+.history-list .value {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.workout-select {
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: left;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  font-size: 14px;
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.detail-header > div:last-child {
+  display: flex;
+  gap: 12px;
+}
+
+.sets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.sets-table th,
+.sets-table td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
