@@ -110,6 +110,7 @@ export function WorkoutsPage() {
             setSelectedId(null)
             loadWorkouts()
           }}
+          onWorkoutUpdated={loadWorkouts}
         />
       )}
     </section>

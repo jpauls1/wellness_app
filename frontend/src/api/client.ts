@@ -44,6 +44,12 @@ export const api = {
       body: JSON.stringify(payload),
     })
   },
+  updateWeightEntry(id: number, payload: { weight_lbs?: number; timestamp?: string }) {
+    return request<WeightEntry>(`/weight-entries/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
   deleteWeightEntry(id: number) {
     return request<void>(`/weight-entries/${id}`, { method: 'DELETE' })
   },
@@ -57,6 +63,9 @@ export const api = {
   createWorkout(payload: { name: string; date: string; type: WorkoutType }) {
     return request<Workout>('/workouts', { method: 'POST', body: JSON.stringify(payload) })
   },
+  updateWorkout(id: number, payload: { name?: string; date?: string; type?: WorkoutType }) {
+    return request<Workout>(`/workouts/${id}`, { method: 'PUT', body: JSON.stringify(payload) })
+  },
   deleteWorkout(id: number) {
     return request<void>(`/workouts/${id}`, { method: 'DELETE' })
   },
@@ -67,6 +76,16 @@ export const api = {
   ) {
     return request<ExerciseSet>(`/workouts/${workoutId}/sets`, {
       method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  },
+  updateSet(
+    workoutId: number,
+    setId: number,
+    payload: { reps?: number; time_spent?: string | null; calories_burned?: number | null },
+  ) {
+    return request<ExerciseSet>(`/workouts/${workoutId}/sets/${setId}`, {
+      method: 'PUT',
       body: JSON.stringify(payload),
     })
   },

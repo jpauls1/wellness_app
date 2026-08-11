@@ -8,6 +8,8 @@ export function WeightPage() {
   const [weight, setWeight] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState('')
 
   async function loadEntries() {
     setLoading(true)
@@ -44,6 +46,28 @@ export function WeightPage() {
       await loadEntries()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete weight entry')
+    }
+  }
+
+  function startEdit(entry: WeightEntry) {
+    setEditingId(entry.id)
+    setEditValue(String(entry.weight_lbs))
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditValue('')
+  }
+
+  async function handleSaveEdit(id: number) {
+    const parsed = Number(editValue)
+    if (!editValue || Number.isNaN(parsed)) return
+    try {
+      await api.updateWeightEntry(id, { weight_lbs: parsed })
+      cancelEdit()
+      await loadEntries()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update weight entry')
     }
   }
 
@@ -84,20 +108,57 @@ export function WeightPage() {
           <p className="empty-state">No entries yet.</p>
         ) : (
           <ul className="history-list">
-            {recent.map((entry) => (
-              <li key={entry.id}>
-                <span>{new Date(entry.timestamp).toLocaleString()}</span>
-                <span className="value">{entry.weight_lbs} lbs</span>
-                <button
-                  type="button"
-                  className="link-button"
-                  onClick={() => handleDelete(entry.id)}
-                  aria-label="Delete entry"
-                >
-                  Delete
-                </button>
-              </li>
-            ))}
+            {recent.map((entry) =>
+              editingId === entry.id ? (
+                <li key={entry.id} className="edit-row">
+                  <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    min="0"
+                    autoFocus
+                    value={editValue}
+                    onChange={(event) => setEditValue(event.target.value)}
+                  />
+                  <span className="row-actions">
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() => handleSaveEdit(entry.id)}
+                    >
+                      Save
+                    </button>
+                    <button type="button" className="link-button" onClick={cancelEdit}>
+                      Cancel
+                    </button>
+                  </span>
+                </li>
+              ) : (
+                <li key={entry.id}>
+                  <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                  <span className="value">{entry.weight_lbs} lbs</span>
+                  <span className="row-actions">
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() => startEdit(entry)}
+                      aria-label="Edit entry"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() => handleDelete(entry.id)}
+                      aria-label="Delete entry"
+                    >
+                      Delete
+                    </button>
+                  </span>
+                </li>
+              ),
+            )}
           </ul>
         )}
       </div>

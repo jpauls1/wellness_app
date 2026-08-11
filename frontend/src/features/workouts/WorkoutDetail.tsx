@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../api/client'
-import type { WorkoutWithSets } from '../../api/types'
+import { WORKOUT_TYPES, type WorkoutType, type WorkoutWithSets } from '../../api/types'
+import { isoToMmDdYy, mmDdYyToIso } from '../../utils/date'
 
 interface WorkoutDetailProps {
   workoutId: number
   onClose: () => void
   onWorkoutDeleted: () => void
+  onWorkoutUpdated: () => void
 }
 
-export function WorkoutDetail({ workoutId, onClose, onWorkoutDeleted }: WorkoutDetailProps) {
+export function WorkoutDetail({
+  workoutId,
+  onClose,
+  onWorkoutDeleted,
+  onWorkoutUpdated,
+}: WorkoutDetailProps) {
   const [workout, setWorkout] = useState<WorkoutWithSets | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -16,6 +23,16 @@ export function WorkoutDetail({ workoutId, onClose, onWorkoutDeleted }: WorkoutD
   const [reps, setReps] = useState('')
   const [timeSpent, setTimeSpent] = useState('')
   const [caloriesBurned, setCaloriesBurned] = useState('')
+
+  const [isEditingWorkout, setIsEditingWorkout] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editType, setEditType] = useState<WorkoutType>('Lifting')
+
+  const [editingSetId, setEditingSetId] = useState<number | null>(null)
+  const [editReps, setEditReps] = useState('')
+  const [editTimeSpent, setEditTimeSpent] = useState('')
+  const [editCaloriesBurned, setEditCaloriesBurned] = useState('')
 
   async function loadWorkout() {
     setError(null)
@@ -70,6 +87,62 @@ export function WorkoutDetail({ workoutId, onClose, onWorkoutDeleted }: WorkoutD
     }
   }
 
+  function startEditWorkout() {
+    if (!workout) return
+    setEditName(workout.name)
+    setEditDate(mmDdYyToIso(workout.date))
+    setEditType(workout.type)
+    setIsEditingWorkout(true)
+  }
+
+  function cancelEditWorkout() {
+    setIsEditingWorkout(false)
+  }
+
+  async function handleSaveWorkout(event: React.FormEvent) {
+    event.preventDefault()
+    if (!editName || !editDate) return
+    try {
+      await api.updateWorkout(workoutId, {
+        name: editName,
+        date: isoToMmDdYy(editDate),
+        type: editType,
+      })
+      setIsEditingWorkout(false)
+      await loadWorkout()
+      onWorkoutUpdated()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update workout')
+    }
+  }
+
+  function startEditSet(setId: number, currentReps: number, currentTime: string | null, currentCalories: number | null) {
+    setEditingSetId(setId)
+    setEditReps(String(currentReps))
+    setEditTimeSpent(currentTime ?? '')
+    setEditCaloriesBurned(currentCalories !== null ? String(currentCalories) : '')
+  }
+
+  function cancelEditSet() {
+    setEditingSetId(null)
+  }
+
+  async function handleSaveSet(setId: number) {
+    const parsedReps = Number(editReps)
+    if (!editReps || Number.isNaN(parsedReps)) return
+    try {
+      await api.updateSet(workoutId, setId, {
+        reps: parsedReps,
+        time_spent: editTimeSpent || null,
+        calories_burned: editCaloriesBurned ? Number(editCaloriesBurned) : null,
+      })
+      setEditingSetId(null)
+      await loadWorkout()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update set')
+    }
+  }
+
   if (!workout) {
     return (
       <div className="card">
@@ -80,22 +153,60 @@ export function WorkoutDetail({ workoutId, onClose, onWorkoutDeleted }: WorkoutD
 
   return (
     <div className="card">
-      <div className="detail-header">
-        <div>
-          <h3>{workout.name}</h3>
-          <p className="muted">
-            {workout.date} · {workout.type}
-          </p>
+      {isEditingWorkout ? (
+        <form className="entry-form" onSubmit={handleSaveWorkout}>
+          <input
+            placeholder="Workout name"
+            value={editName}
+            onChange={(event) => setEditName(event.target.value)}
+            required
+          />
+          <input
+            type="date"
+            value={editDate}
+            onChange={(event) => setEditDate(event.target.value)}
+            required
+          />
+          <select
+            value={editType}
+            onChange={(event) => setEditType(event.target.value as WorkoutType)}
+          >
+            {WORKOUT_TYPES.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <span className="row-actions">
+            <button type="submit" className="link-button">
+              Save
+            </button>
+            <button type="button" className="link-button" onClick={cancelEditWorkout}>
+              Cancel
+            </button>
+          </span>
+        </form>
+      ) : (
+        <div className="detail-header">
+          <div>
+            <h3>{workout.name}</h3>
+            <p className="muted">
+              {workout.date} · {workout.type}
+            </p>
+          </div>
+          <div>
+            <button type="button" className="link-button" onClick={startEditWorkout}>
+              Edit workout
+            </button>
+            <button type="button" className="link-button" onClick={handleDeleteWorkout}>
+              Delete workout
+            </button>
+            <button type="button" className="link-button" onClick={onClose}>
+              Close
+            </button>
+          </div>
         </div>
-        <div>
-          <button type="button" className="link-button" onClick={handleDeleteWorkout}>
-            Delete workout
-          </button>
-          <button type="button" className="link-button" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
+      )}
 
       {error && <p className="error">{error}</p>}
 
@@ -146,25 +257,84 @@ export function WorkoutDetail({ workoutId, onClose, onWorkoutDeleted }: WorkoutD
             </tr>
           </thead>
           <tbody>
-            {workout.sets.map((set) => (
-              <tr key={set.id}>
-                <td>{set.exercise_type}</td>
-                <td>{set.set_number}</td>
-                <td>{set.reps}</td>
-                <td>{set.time_spent ?? '—'}</td>
-                <td>{set.calories_burned ?? '—'}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => handleDeleteSet(set.id)}
-                    aria-label="Delete set"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {workout.sets.map((set) =>
+              editingSetId === set.id ? (
+                <tr key={set.id}>
+                  <td>{set.exercise_type}</td>
+                  <td>{set.set_number}</td>
+                  <td>
+                    <input
+                      type="number"
+                      min="1"
+                      autoFocus
+                      value={editReps}
+                      onChange={(event) => setEditReps(event.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="text"
+                      placeholder="HH:MM:SS"
+                      pattern="^\d{2}:\d{2}:\d{2}$"
+                      value={editTimeSpent}
+                      onChange={(event) => setEditTimeSpent(event.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      min="0"
+                      value={editCaloriesBurned}
+                      onChange={(event) => setEditCaloriesBurned(event.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <span className="row-actions">
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() => handleSaveSet(set.id)}
+                      >
+                        Save
+                      </button>
+                      <button type="button" className="link-button" onClick={cancelEditSet}>
+                        Cancel
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={set.id}>
+                  <td>{set.exercise_type}</td>
+                  <td>{set.set_number}</td>
+                  <td>{set.reps}</td>
+                  <td>{set.time_spent ?? '—'}</td>
+                  <td>{set.calories_burned ?? '—'}</td>
+                  <td>
+                    <span className="row-actions">
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() =>
+                          startEditSet(set.id, set.reps, set.time_spent, set.calories_burned)
+                        }
+                        aria-label="Edit set"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() => handleDeleteSet(set.id)}
+                        aria-label="Delete set"
+                      >
+                        Delete
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              ),
+            )}
           </tbody>
         </table>
       )}

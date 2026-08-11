@@ -239,3 +239,30 @@ section > h2 {
   padding: 8px;
   border-bottom: 1px solid var(--border);
 }
+
+.sets-table input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.edit-row input {
+  flex: 1 1 100px;
+  max-width: 140px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text);
+  font-size: 14px;
+}
