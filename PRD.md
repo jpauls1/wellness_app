@@ -10,7 +10,7 @@ Wellness Tracker is a personal, single-user Progressive Web App (PWA) for iOS th
 
 The core value proposition is longitudinal self-tracking: every entry is timestamped and persisted so the user can look back at trends (e.g., "am I losing weight?", "how has my bench press volume changed?") rather than relying on memory or scattered notes.
 
-**Primary user:** a single individual tracking their own wellness journey (no multi-tenant/account system required — see [Out of Scope](#7-out-of-scope)).
+**Primary user:** a single individual tracking their own wellness journey. Sign-in (Clerk, Google) gates the app and scopes data to the signed-in account, laying groundwork for other people to eventually create their own accounts — but no multi-user features beyond that scoping exist yet (see [Out of Scope](#7-out-of-scope)).
 
 ## 2. Functional Requirements
 
@@ -49,12 +49,12 @@ The core value proposition is longitudinal self-tracking: every entry is timesta
 
 ## 3. Non-Functional Requirements
 
-- **Lightweight & locally runnable:** The service must start with a single command, require no external infrastructure (no cloud DB, no message queue), and use an embedded/file-based database so a fresh clone can run immediately after installing dependencies.
+- **Lightweight & locally runnable:** The service must start with a single command (given a configured `.env`) and require no infrastructure to self-host beyond a Postgres database (Supabase) and an auth provider (Clerk) — no message queue, no additional services.
 - **RESTful conventions:** Resources (`weight-entries`, `workouts`, `sets`) are addressed with plural nouns, standard HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`) map to CRUD actions, and responses use standard HTTP status codes (`200`, `201`, `400`, `404`, etc.).
 - **Documented endpoints:** Every endpoint is documented (request/response schema, status codes) both in this PRD and via auto-generated interactive API docs (OpenAPI/Swagger) exposed by the running service.
 - **PWA installability on iOS:** The frontend must include a valid `manifest.json` and a service worker so Safari's "Add to Home Screen" produces an app-like, standalone experience with basic offline asset caching. Note: iOS Safari requires the app be served over HTTPS (or accessed on a trusted local network) to install correctly — plain `localhost`-only hosting is sufficient for desktop development but a tunneled/HTTPS URL (e.g., via a reverse proxy or a free hosting tier) is needed to test "Add to Home Screen" on an actual iPhone.
 - **Performance:** Given single-user, low-write-volume usage, no specific throughput targets are required beyond sub-200ms typical response times on local hardware.
-- **Data durability:** The database file (or equivalent) should be easy to back up (e.g., copy a single file).
+- **Data durability:** Data is persisted in a managed Postgres database (Supabase), covered by its own backup/point-in-time-recovery tooling.
 
 ## 4. API Specification
 
@@ -247,6 +247,7 @@ Standard status codes: `400` (validation), `404` (not found), `422` (semantic va
 | Field | Type | Constraints |
 |---|---|---|
 | `id` | integer | primary key, auto-increment |
+| `user_id` | text | required, indexed — owning Clerk account, server-assigned from the verified session token |
 | `weight_lbs` | decimal | required |
 | `timestamp` | datetime | required, defaults to creation time |
 
@@ -255,6 +256,7 @@ Standard status codes: `400` (validation), `404` (not found), `422` (semantic va
 | Field | Type | Constraints |
 |---|---|---|
 | `id` | integer | primary key, auto-increment |
+| `user_id` | text | required, indexed — owning Clerk account, server-assigned from the verified session token |
 | `name` | text | required, free text |
 | `date` | date | required, stored as `YYYY-MM-DD`, presented as `MM/DD/YY` |
 | `type` | enum | required — one of `Lifting`, `Cardio`, `HIIT`, `Yoga`, `Combo`, `Other` |
@@ -281,7 +283,8 @@ Standard status codes: `400` (validation), `404` (not found), `422` (semantic va
 |---|---|---|
 | Backend language/framework | **Python 3 + FastAPI** | FastAPI generates interactive OpenAPI/Swagger docs automatically from typed request/response models, directly satisfying the "clearly document each endpoint" requirement with minimal effort. It's lightweight, starts with a single `uvicorn` command, and has first-class async support if needed later. |
 | ORM / data access | **SQLModel (or SQLAlchemy) + Pydantic validation** | Type-safe models shared between validation and persistence layers; enum support maps cleanly to the `workouts.type` field. |
-| Database | **SQLite** | Free, zero-configuration, single-file relational database — satisfies "any free relational database" and "lightweight/easy to run locally" better than a hosted DB or spreadsheet, while still fully relational (foreign keys, joins) for the workout → sets relationship. Trivial to back up (copy the `.db` file). |
+| Database | **Supabase (managed Postgres)** | Fully relational (foreign keys, joins) for the workout → sets relationship; free tier suits a personal app; managed backups. Replaced an earlier local SQLite file once real auth/accounts were added. |
+| Authentication | **Clerk** | Handles sign-in (Google), session tokens, and account management; the backend verifies Clerk session tokens server-side to scope every record to its owning account. |
 | Frontend | **React (Vite) as an installable PWA** | Component model suits distinct views (weight log + graph, workout log, workout history); Vite's PWA plugin handles `manifest.json` and service worker generation with minimal config. |
 | Charting | **Lightweight charting library (e.g., Chart.js or Recharts)** | Sufficient for the "basic line graph" requirement without heavy dependencies. |
 | API docs | **Auto-generated OpenAPI/Swagger UI** (via FastAPI, served at `/docs`) | Satisfies documentation requirement and stays in sync with code automatically. |
@@ -289,7 +292,7 @@ Standard status codes: `400` (validation), `404` (not found), `422` (semantic va
 
 ## 7. Out of Scope
 
-- Multi-user accounts, authentication, or authorization (single-user personal app).
+- Multi-tenant features: invites, roles/permissions, admin tooling, billing. (Authentication itself — Clerk sign-in, per-account data scoping — is in place; sharing the app with other people beyond that is a future step, not built yet.)
 - Social features (sharing progress, following other users, leaderboards).
 - Integrations with third-party health platforms (Apple Health, Fitbit, Garmin, etc.).
 - Push notifications or reminders.
