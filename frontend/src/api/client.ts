@@ -6,9 +6,24 @@ interface ApiErrorBody {
   message?: string
 }
 
+type TokenGetter = () => Promise<string | null>
+
+let tokenGetter: TokenGetter | null = null
+
+// Called once from an AuthBridge component mounted inside <ClerkProvider>,
+// since useAuth()/getToken() is only available inside React — this is the
+// single point every api.* call funnels through to pick it up.
+export function setTokenGetter(fn: TokenGetter) {
+  tokenGetter = fn
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = tokenGetter ? await tokenGetter() : null
   const response = await fetch(`${API_BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   })
 

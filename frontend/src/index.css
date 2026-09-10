@@ -79,6 +79,23 @@ button {
   font-size: 22px;
 }
 
+.app-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.app-signed-out {
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .tabs {
   display: flex;
   gap: 4px;
