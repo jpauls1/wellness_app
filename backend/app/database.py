@@ -1,8 +1,15 @@
 from sqlmodel import SQLModel, Session, create_engine
 
-DATABASE_URL = "sqlite:///./wellness.db"
+from .config import get_settings
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+settings = get_settings()
+
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+    pool_size=5,
+    max_overflow=10,
+)
 
 
 def create_db_and_tables() -> None:

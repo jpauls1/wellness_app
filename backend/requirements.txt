@@ -2,3 +2,7 @@ fastapi>=0.115,<0.116
 uvicorn[standard]>=0.30,<0.31
 sqlmodel>=0.0.22,<0.1
 pydantic>=2.9,<3
+psycopg[binary]>=3.3,<4
+clerk-backend-api>=6,<8
+pydantic-settings>=2.5,<3
+alembic>=1.13,<2

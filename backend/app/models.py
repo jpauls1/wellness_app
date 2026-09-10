@@ -22,6 +22,7 @@ class WeightEntry(SQLModel, table=True):
     __tablename__ = "weight_entries"
 
     id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True)
     weight_lbs: float
     timestamp: datetime = Field(default_factory=utc_now)
 
@@ -30,6 +31,7 @@ class Workout(SQLModel, table=True):
     __tablename__ = "workouts"
 
     id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(index=True)
     name: str
     date: date
     type: WorkoutType

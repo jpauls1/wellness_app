@@ -1,3 +1,6 @@
+from .conftest import OTHER_USER_ID, TEST_USER_HEADER
+
+
 def test_create_and_list_weight_entry(client):
     response = client.post("/api/weight-entries", json={"weight_lbs": 182.4})
     assert response.status_code == 201
@@ -42,6 +45,34 @@ def test_weight_entry_not_found(client):
     assert client.get("/api/weight-entries/999").status_code == 404
     assert client.put("/api/weight-entries/999", json={"weight_lbs": 100}).status_code == 404
     assert client.delete("/api/weight-entries/999").status_code == 404
+
+
+def test_weight_entries_are_isolated_per_user(client):
+    other_user_headers = {TEST_USER_HEADER: OTHER_USER_ID}
+
+    created = client.post("/api/weight-entries", json={"weight_lbs": 180.0}).json()
+    entry_id = created["id"]
+
+    assert client.get("/api/weight-entries", headers=other_user_headers).json() == []
+    assert (
+        client.get(f"/api/weight-entries/{entry_id}", headers=other_user_headers).status_code
+        == 404
+    )
+    assert (
+        client.put(
+            f"/api/weight-entries/{entry_id}",
+            json={"weight_lbs": 999},
+            headers=other_user_headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(f"/api/weight-entries/{entry_id}", headers=other_user_headers).status_code
+        == 404
+    )
+
+    # Original owner's entry is untouched.
+    assert client.get(f"/api/weight-entries/{entry_id}").json()["weight_lbs"] == 180.0
 
 
 def test_list_weight_entries_filtered_by_date_range(client):

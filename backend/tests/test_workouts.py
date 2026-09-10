@@ -1,3 +1,6 @@
+from .conftest import OTHER_USER_ID, TEST_USER_HEADER
+
+
 def test_create_workout(client):
     response = client.post(
         "/api/workouts", json={"name": "Push Day", "date": "08/05/26", "type": "Lifting"}
@@ -118,6 +121,73 @@ def test_update_and_delete_set(client):
 
     remaining = client.get(f"/api/workouts/{workout['id']}/sets")
     assert remaining.json() == []
+
+
+def test_workouts_are_isolated_per_user(client):
+    other_user_headers = {TEST_USER_HEADER: OTHER_USER_ID}
+
+    workout = client.post(
+        "/api/workouts", json={"name": "Push Day", "date": "08/05/26", "type": "Lifting"}
+    ).json()
+    workout_id = workout["id"]
+
+    assert client.get("/api/workouts", headers=other_user_headers).json() == []
+    assert client.get(f"/api/workouts/{workout_id}", headers=other_user_headers).status_code == 404
+    assert (
+        client.put(
+            f"/api/workouts/{workout_id}",
+            json={"name": "Hijacked"},
+            headers=other_user_headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(f"/api/workouts/{workout_id}", headers=other_user_headers).status_code
+        == 404
+    )
+
+    # Original owner's workout is untouched.
+    assert client.get(f"/api/workouts/{workout_id}").json()["name"] == "Push Day"
+
+
+def test_sets_are_isolated_per_user_even_with_correct_ids(client):
+    other_user_headers = {TEST_USER_HEADER: OTHER_USER_ID}
+
+    workout = client.post(
+        "/api/workouts", json={"name": "Push Day", "date": "08/05/26", "type": "Lifting"}
+    ).json()
+    workout_id = workout["id"]
+    created_set = client.post(
+        f"/api/workouts/{workout_id}/sets",
+        json={"exercise_type": "Bench Press", "reps": 10},
+    ).json()
+    set_id = created_set["id"]
+
+    # Another user guessing the correct workout_id/set_id combo must not be able
+    # to read, update, or delete a set that belongs to someone else's workout.
+    assert (
+        client.get(f"/api/workouts/{workout_id}/sets", headers=other_user_headers).status_code
+        == 404
+    )
+    assert (
+        client.put(
+            f"/api/workouts/{workout_id}/sets/{set_id}",
+            json={"reps": 1},
+            headers=other_user_headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"/api/workouts/{workout_id}/sets/{set_id}", headers=other_user_headers
+        ).status_code
+        == 404
+    )
+
+    # Original owner's set is untouched.
+    remaining = client.get(f"/api/workouts/{workout_id}/sets").json()
+    assert len(remaining) == 1
+    assert remaining[0]["reps"] == 10
 
 
 def test_list_workouts_filtered_by_type(client):
