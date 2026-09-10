@@ -26,3 +26,9 @@ frontend/.env
 # Editor
 .vscode/
 .idea/
+
+# Claude Code tooling (local skill installs, not part of the app)
+.agents/
+.claude/
+.mcp.json
+skills-lock.json
